@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MayBrowser - Gaming Browser</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background">
+        <div class="stars"></div>
+        <div class="moon"></div>
+    </div>
+
+    <header>
+        <div class="browser-logo">
+            <svg class="browser-icon" viewBox="0 0 24 24" width="24" height="24">
+                <use href="assets/browser-icon.svg#icon"></use>
+            </svg>
+            <h1>MayBrowser</h1>
+        </div>
+        <div class="url-bar">
+            <div class="url-controls">
+                <button id="backButton" class="nav-button"><i class="fas fa-arrow-left"></i></button>
+                <button id="forwardButton" class="nav-button"><i class="fas fa-arrow-right"></i></button>
+                <button id="refreshButton" class="nav-button"><i class="fas fa-redo-alt"></i></button>
+                <button id="homeButton" class="nav-button"><i class="fas fa-home"></i></button>
+            </div>
+            <form id="urlForm">
+                <input type="text" id="urlInput" placeholder="Search Google or enter a URL">
+                <button type="submit" id="goButton"><i class="fas fa-arrow-circle-right"></i></button>
+            </form>
+            <div class="browser-settings">
+                <button id="menuButton" class="menu-button"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="browser-content">
+        <iframe id="browserFrame" src="https://www.google.com" title="MayBrowser Content"></iframe>
+    </div>
+
+    <div class="ai-button" id="aiButton">
+        <i class="fas fa-robot"></i>
+    </div>
+
+    <div class="ai-panel" id="aiPanel">
+        <div class="ai-header">
+            <h3>Gemini AI Assistant</h3>
+            <button id="closeAiPanel"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="ai-content">
+            <div class="ai-messages" id="aiMessages">
+                <div class="ai-message">
+                    <p>Hi! I'm your Gemini AI assistant. How can I help you?</p>
+                </div>
+            </div>
+            <form id="aiForm">
+                <input type="text" id="aiInput" placeholder="Ask Gemini AI...">
+                <button type="submit" id="aiSendButton"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="menu-panel" id="menuPanel">
+        <div class="menu-header">
+            <h3>Browser Menu</h3>
+            <button id="closeMenuPanel"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="menu-content">
+            <button class="menu-item" id="toggleSoundButton">
+                <i class="fas fa-volume-up"></i>
+                <span>Toggle Sound</span>
+            </button>
+            <button class="menu-item" id="bookmarksButton">
+                <i class="fas fa-bookmark"></i>
+                <span>Bookmarks</span>
+            </button>
+            <button class="menu-item" id="historyButton">
+                <i class="fas fa-history"></i>
+                <span>History</span>
+            </button>
+            <button class="menu-item" id="settingsButton">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </button>
+            <button class="menu-item" id="aboutButton">
+                <i class="fas fa-info-circle"></i>
+                <span>About MayBrowser</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="js/sounds.js"></script>
+    <script src="js/ai.js"></script>
+    <script src="js/browser.js"></script>
+</body>
+</html>
