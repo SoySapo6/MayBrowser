@@ -223,7 +223,7 @@ function showBrowserContent(url) {
         if (!url.includes('://') && !url.startsWith('www.')) {
             // Treat as a search query if not a URL
             if (url.toLowerCase().includes('yahoo')) {
-                processedUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(url)}`;
+                processedUrl = `https://www.bing.com/search?q=${encodeURIComponent(url)}`;
             } else {
                 // Use DuckDuckGo instead of Google
                 processedUrl = `https://www.bing.com/search?q=${encodeURIComponent(url)}`;
@@ -1020,7 +1020,7 @@ function goHome() {
         { url: 'https://www.facebook.com', icon: 'fab fa-facebook', name: 'Facebook' },
         { url: 'https://www.twitter.com', icon: 'fab fa-twitter', name: 'Twitter' },
         { url: 'https://www.instagram.com', icon: 'fab fa-instagram', name: 'Instagram' },
-        { url: 'https://espanol.yahoo.com', icon: 'fab fa-yahoo', name: 'Yahoo' },
+        { url: 'https://www.bing.com/search?q=Busca!', icon: 'fab fa-yahoo', name: 'Yahoo' },
         { url: 'https://www.amazon.com', icon: 'fab fa-amazon', name: 'Amazon' }
     ];
     
