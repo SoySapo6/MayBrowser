@@ -100,13 +100,17 @@ function initializeBrowser() {
     goHome();
     
     // Play startup sound
-    SoundEffects.playStartup();
+    if (typeof SoundEffects !== 'undefined' && SoundEffects.playStartup) {
+        SoundEffects.playStartup();
+    }
     
     console.log('MayBrowser initialization complete');
 }
 
 // Function to handle navigation to a URL
 function navigateToUrl(url) {
+    debugLog(`Navegando a URL: ${url}`);
+    
     // Empty URL, do nothing
     if (!url) return;
     
@@ -130,6 +134,115 @@ function navigateToUrl(url) {
     
     // Update button states
     updateButtonStates();
+}
+
+// Function to handle showing browser content
+function showBrowserContent(url) {
+    debugLog(`Showing browser content for: ${url}`);
+    // Clear current content
+    browserFrame.innerHTML = '';
+    
+    // Create loading indicator
+    const loadingContainer = document.createElement('div');
+    loadingContainer.className = 'loading-container';
+    loadingContainer.style.display = 'flex';
+    loadingContainer.style.flexDirection = 'column';
+    loadingContainer.style.alignItems = 'center';
+    loadingContainer.style.justifyContent = 'center';
+    loadingContainer.style.height = '100%';
+    
+    const loadingSpinner = document.createElement('div');
+    loadingSpinner.className = 'loading-spinner';
+    loadingSpinner.style.border = '5px solid rgba(0, 0, 0, 0.1)';
+    loadingSpinner.style.borderTop = '5px solid var(--accent-color)';
+    loadingSpinner.style.borderRadius = '50%';
+    loadingSpinner.style.width = '50px';
+    loadingSpinner.style.height = '50px';
+    loadingSpinner.style.animation = 'spin 1s linear infinite';
+    loadingContainer.appendChild(loadingSpinner);
+    
+    const loadingText = document.createElement('div');
+    loadingText.textContent = 'Cargando página...';
+    loadingText.style.marginTop = '20px';
+    loadingText.style.color = 'var(--text-color)';
+    loadingContainer.appendChild(loadingText);
+    
+    // Add the loading animation keyframes if not already added
+    if (!document.querySelector('#spinner-animation')) {
+        const spinnerStyle = document.createElement('style');
+        spinnerStyle.id = 'spinner-animation';
+        spinnerStyle.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(spinnerStyle);
+    }
+    
+    browserFrame.appendChild(loadingContainer);
+    
+    try {
+        // Create and load iframe with simulated content
+        const iframe = document.createElement('iframe');
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.border = 'none';
+        iframe.style.backgroundColor = '#181822';  // Match our dark theme
+        
+        // Add event listener for when iframe loads
+        iframe.addEventListener('load', () => {
+            // When loaded, remove the loading indicator
+            loadingContainer.style.display = 'none';
+            
+            // Play sound effect
+            if (typeof SoundEffects !== 'undefined' && SoundEffects.playSuccess) {
+                SoundEffects.playSuccess();
+            }
+        });
+        
+        // Set iframe source - we need to use special handling for static hosts
+        if (url === 'home') {
+            // For home, just go to home screen
+            goHome();
+            return;
+        } else if (!url.includes('://') && !url.startsWith('www.')) {
+            // Treat as a search query if not a URL
+            let searchUrl;
+            if (url.toLowerCase().includes('yahoo')) {
+                searchUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(url)}`;
+            } else {
+                searchUrl = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+            }
+            createSimulatedContent(searchUrl, iframe, loadingContainer);
+        } else {
+            // Standardize URL format
+            let fullUrl = url;
+            if (url.startsWith('www.')) {
+                fullUrl = 'https://' + url;
+            } else if (!url.includes('://')) {
+                fullUrl = 'https://' + url;
+            }
+            
+            // Intentar determinar si la URL es válida
+            try {
+                new URL(fullUrl);
+                createSimulatedContent(fullUrl, iframe, loadingContainer);
+            } catch (error) {
+                // URL inválida, mostrar como error
+                createSimulatedContent(`https://error.com?error=notfound&url=${encodeURIComponent(fullUrl)}`, iframe, loadingContainer);
+            }
+        }
+        
+        // Add iframe to the browser frame
+        browserFrame.appendChild(iframe);
+    } catch (error) {
+        console.error('Navigation error:', error);
+        showErrorMessage(`Error al cargar la página: ${error.message}`);
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playError) {
+            SoundEffects.playError();
+        }
+    }
 }
 
 // Function to create simulated content for static environment
@@ -157,6 +270,7 @@ function createSimulatedContent(url, iframe, loadingContainer) {
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>${hostname}</title>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
                 <style>
                     body {
                         font-family: Arial, sans-serif;
@@ -218,10 +332,7 @@ function createSimulatedContent(url, iframe, loadingContainer) {
                         color: #aaa;
                     }
                     .content-preview {
-                        padding: 15px;
                         min-height: 300px;
-                        background-color: white;
-                        color: #333;
                         border-radius: 0 0 5px 5px;
                     }
                     .preview-note {
@@ -247,30 +358,8 @@ function createSimulatedContent(url, iframe, loadingContainer) {
                 </style>
             </head>
             <body>
-                <div class="site-container">
-                    <div class="site-header">
-                        <h1>Simulación de Navegación</h1>
-                        <div class="site-url">${url}</div>
-                    </div>
-                    
-                    <div class="preview-box">
-                        <div class="preview-header">
-                            <div class="circle red"></div>
-                            <div class="circle yellow"></div>
-                            <div class="circle green"></div>
-                            <div class="url-bar">${url}</div>
-                        </div>
-                        <div class="content-preview">
-                            ${getSimulatedContent(url, hostname)}
-                        </div>
-                    </div>
-                    
-                    <div class="preview-note">
-                        <p><strong>Nota:</strong> MayBrowser está funcionando en modo de simulación para compatibilidad con hosts estáticos.
-                        Se muestra una vista previa del sitio, pero la navegación completa no está disponible en este entorno.</p>
-                    </div>
-                    
-                    <button class="back-button" onclick="window.parent.goHome()">Volver a la Página de Inicio</button>
+                <div class="content-preview">
+                    ${getSimulatedContent(url, hostname)}
                 </div>
                 
                 <script>
@@ -285,28 +374,193 @@ function createSimulatedContent(url, iframe, loadingContainer) {
         iframeDoc.close();
         
         // Play success sound
-        SoundEffects.playNavigation();
-    }, 1500); // Simulate loading time of 1.5 seconds
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playNavigation) {
+            SoundEffects.playNavigation();
+        }
+    }, 1000); // Simulate loading time of 1 second
 }
 
 // Helper function to generate simulated content based on the website
 function getSimulatedContent(url, hostname) {
+    // Verificar si es una búsqueda o URL de error
+    if (url.includes('error=')) {
+        return generateErrorPage(url);
+    }
+    
     // Generate different content based on the hostname
     if (hostname.includes('youtube.com')) {
-        return `
-            <div style="text-align: center; padding-top: 30px;">
-                <div style="width: 120px; height: 90px; margin: 0 auto; background-color: #FF0000; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                    <div style="width: 0; height: 0; border-style: solid; border-width: 15px 0 15px 30px; border-color: transparent transparent transparent #ffffff;"></div>
+        return generateYouTubeUI(url);
+    } else if (hostname.includes('google.com')) {
+        return generateGoogleUI(url);
+    } else if (hostname.includes('yahoo.com')) {
+        return generateYahooUI(url);
+    } else if (hostname.includes('facebook.com')) {
+        return generateFacebookUI();
+    } else if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
+        return generateTwitterUI();
+    } else if (hostname.includes('instagram.com')) {
+        return generateInstagramUI();
+    } else if (hostname.includes('amazon')) {
+        return generateAmazonUI();
+    } else if (hostname.includes('netflix')) {
+        return generateNetflixUI();
+    } else if (hostname.includes('spotify')) {
+        return generateSpotifyUI();
+    } else if (hostname.includes('wikipedia')) {
+        return generateWikipediaUI(url);
+    } else {
+        // Sitio genérico
+        return generateGenericWebsiteUI(url, hostname);
+    }
+}
+
+// Páginas de errores
+function generateErrorPage(url) {
+    const params = new URLSearchParams(url.split('?')[1]);
+    const errorType = params.get('error');
+    const errorUrl = params.get('url') || 'unknown site';
+    
+    let errorTitle = "Error de navegación";
+    let errorMessage = "No se pudo acceder a la página solicitada.";
+    let errorDetails = "Se ha producido un error desconocido.";
+    let errorIcon = "fa-exclamation-triangle";
+    
+    if (errorType === 'cors') {
+        errorTitle = "Error de Acceso (CORS)";
+        errorMessage = `No se puede acceder a ${errorUrl}`;
+        errorDetails = "Las políticas de seguridad del navegador (CORS) impiden acceder directamente a este sitio web desde un host estático.";
+        errorIcon = "fa-lock";
+    } else if (errorType === 'network') {
+        errorTitle = "Error de Conexión";
+        errorMessage = `No se puede conectar a ${errorUrl}`;
+        errorDetails = "Verifica tu conexión a Internet o intenta de nuevo más tarde.";
+        errorIcon = "fa-wifi";
+    } else if (errorType === 'blocked') {
+        errorTitle = "Sitio Bloqueado";
+        errorMessage = `El acceso a ${errorUrl} está restringido`;
+        errorDetails = "Este sitio ha sido bloqueado por políticas de seguridad. Contacta al administrador para más información.";
+        errorIcon = "fa-ban";
+    } else if (errorType === 'notfound') {
+        errorTitle = "Página No Encontrada";
+        errorMessage = `No se encontró la página ${errorUrl}`;
+        errorDetails = "La URL solicitada no existe. Verifica que hayas escrito correctamente la dirección.";
+        errorIcon = "fa-question-circle";
+    }
+    
+    return `
+        <div style="background-color: #f8f9fa; padding: 40px 20px; height: 100%; font-family: Arial, sans-serif; color: #333; display: flex; align-items: center; justify-content: center;">
+            <div style="max-width: 600px; background-color: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 30px; text-align: center;">
+                <div style="font-size: 40px; margin-bottom: 20px; color: #e74c3c;">
+                    <i class="fas ${errorIcon}"></i>
                 </div>
-                <h3 style="margin-top: 20px; font-size: 18px;">YouTube</h3>
-                <p style="color: #666; font-size: 14px;">Contenido de video no disponible en vista previa</p>
+                <h1 style="font-size: 24px; margin-bottom: 15px; color: #e74c3c;">${errorTitle}</h1>
+                <h2 style="font-size: 18px; margin-bottom: 20px; color: #555;">${errorMessage}</h2>
+                <p style="color: #777; margin-bottom: 30px; line-height: 1.6;">${errorDetails}</p>
+                <div style="margin: 30px 0;">
+                    <button onclick="window.parent.goBack()" style="background-color: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-right: 10px; cursor: pointer; font-weight: bold;">
+                        <i class="fas fa-arrow-left"></i> Volver atrás
+                    </button>
+                    <button onclick="window.parent.goHome()" style="background-color: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                        <i class="fas fa-home"></i> Ir al inicio
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Plantillas para diferentes sitios web
+function generateYouTubeUI(url) {
+    // Extraer la búsqueda o ID del video de la URL
+    let searchQuery = "";
+    let videoId = "";
+    
+    if (url.includes('watch?v=')) {
+        videoId = url.split('watch?v=')[1].split('&')[0];
+    } else if (url.includes('search?q=')) {
+        searchQuery = decodeURIComponent(url.split('search?q=')[1].split('&')[0]);
+    }
+    
+    if (videoId) {
+        // Simulación de página de reproducción de video
+        return `
+            <div style="background-color: #181818; color: white; font-family: Roboto, Arial, sans-serif; height: 100%;">
+                <div style="display: flex; padding: 15px 20px; background-color: #202020; align-items: center;">
+                    <div style="color: #FF0000; font-size: 24px; margin-right: 20px;">
+                        <i class="fab fa-youtube"></i>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <input type="text" value="MayBrowser YouTube Simulation" style="width: 100%; background-color: #121212; color: white; border: 1px solid #303030; padding: 8px; border-radius: 2px;">
+                    </div>
+                    <div style="margin-left: 20px;">
+                        <i class="fas fa-user-circle" style="font-size: 24px;"></i>
+                    </div>
+                </div>
+                
+                <div style="padding: 20px;">
+                    <div style="background-color: #000; width: 100%; max-width: 800px; margin: 0 auto; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; position: relative;">
+                        <div style="position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                            <div style="width: 70px; height: 50px; background-color: #FF0000; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                                <div style="width: 0; height: 0; border-style: solid; border-width: 12px 0 12px 20px; border-color: transparent transparent transparent #ffffff;"></div>
+                            </div>
+                            <div style="font-size: 18px; margin-bottom: 10px;">Video ID: ${videoId}</div>
+                            <div style="color: #aaa; font-size: 14px;">Simulación de reproductor de video</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
-    } else if (hostname.includes('google.com')) {
+    } else {
+        // Simulación de página principal o resultados de búsqueda
         return `
-            <div style="display: flex; justify-content: center; padding-top: 30px;">
-                <div style="text-align: center;">
-                    <div style="margin-bottom: 30px;">
+            <div style="background-color: #181818; color: white; font-family: Roboto, Arial, sans-serif; height: 100%;">
+                <div style="display: flex; padding: 15px 20px; background-color: #202020; align-items: center;">
+                    <div style="color: #FF0000; font-size: 24px; margin-right: 20px;">
+                        <i class="fab fa-youtube"></i>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <input type="text" value="${searchQuery || 'MayBrowser YouTube'}" style="width: 100%; background-color: #121212; color: white; border: 1px solid #303030; padding: 8px; border-radius: 2px;">
+                    </div>
+                    <div style="margin-left: 20px;">
+                        <i class="fas fa-user-circle" style="font-size: 24px;"></i>
+                    </div>
+                </div>
+                
+                <div style="display: flex; height: calc(100% - 60px);">
+                    <!-- Sidebar -->
+                    <div style="width: 200px; background-color: #212121; padding: 15px;">
+                        <div style="padding: 10px; margin-bottom: 10px; display: flex; align-items: center;">
+                            <i class="fas fa-home" style="margin-right: 20px;"></i>
+                            <span>Inicio</span>
+                        </div>
+                        <div style="padding: 10px; margin-bottom: 10px; display: flex; align-items: center;">
+                            <i class="fas fa-compass" style="margin-right: 20px;"></i>
+                            <span>Explorar</span>
+                        </div>
+                        <div style="padding: 10px; margin-bottom: 10px; display: flex; align-items: center;">
+                            <i class="fas fa-play-circle" style="margin-right: 20px;"></i>
+                            <span>Shorts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function generateGoogleUI(url) {
+    // Extraer la consulta de búsqueda si existe
+    let searchQuery = "";
+    if (url.includes('search?q=')) {
+        searchQuery = decodeURIComponent(url.split('search?q=')[1].split('&')[0]);
+    }
+    
+    if (searchQuery) {
+        // Página de resultados de búsqueda
+        return `
+            <div style="font-family: Arial, sans-serif; padding: 20px; background-color: white; color: #333;">
+                <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                    <div style="margin-right: 20px;">
                         <span style="color: #4285F4; font-size: 24px; font-weight: bold;">G</span>
                         <span style="color: #EA4335; font-size: 24px; font-weight: bold;">o</span>
                         <span style="color: #FBBC05; font-size: 24px; font-weight: bold;">o</span>
@@ -314,92 +568,39 @@ function getSimulatedContent(url, hostname) {
                         <span style="color: #34A853; font-size: 24px; font-weight: bold;">l</span>
                         <span style="color: #EA4335; font-size: 24px; font-weight: bold;">e</span>
                     </div>
-                    <div style="width: 80%; max-width: 300px; margin: 0 auto; border: 1px solid #ddd; border-radius: 24px; padding: 10px 15px; text-align: left;">
-                        <div style="display: flex; align-items: center;">
-                            <div style="margin-right: 10px;">🔍</div>
-                            <div style="color: #666; flex: 1;">Buscar en Google</div>
+                    <div style="flex-grow: 1;">
+                        <div style="display: flex; width: 100%; border: 1px solid #dfe1e5; border-radius: 24px; padding: 10px 15px;">
+                            <input type="text" value="${searchQuery}" style="flex-grow: 1; border: none; outline: none; font-size: 16px;">
+                            <div style="margin-left: 15px; color: #4285F4;">
+                                <i class="fas fa-search"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
-    } else if (hostname.includes('facebook.com')) {
-        return `
-            <div style="padding-top: 20px; background-color: #f0f2f5;">
-                <div style="text-align: center; padding: 10px;">
-                    <div style="color: #1877F2; font-size: 24px; font-weight: bold; margin-bottom: 20px;">facebook</div>
-                    <div style="background-color: white; width: 80%; max-width: 300px; margin: 0 auto; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <div style="text-align: left; margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px; color: #606770; font-size: 12px;">Correo electrónico o teléfono</label>
-                            <div style="height: 20px; border: 1px solid #dddfe2; border-radius: 5px;"></div>
-                        </div>
-                        <div style="text-align: left; margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px; color: #606770; font-size: 12px;">Contraseña</label>
-                            <div style="height: 20px; border: 1px solid #dddfe2; border-radius: 5px;"></div>
-                        </div>
-                        <button style="background-color: #1877F2; color: white; border: none; border-radius: 6px; padding: 8px; width: 100%; font-weight: bold; cursor: pointer;">Iniciar sesión</button>
-                    </div>
-                </div>
-            </div>
-        `;
-    } else if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
-        return `
-            <div style="background-color: #fff; padding-top: 20px;">
-                <div style="text-align: center; padding: 10px;">
-                    <div style="font-size: 28px; margin-bottom: 20px;">𝕏</div>
-                    <h3 style="margin-bottom: 20px; font-size: 18px;">Happening now</h3>
-                    <div style="background-color: white; width: 80%; max-width: 300px; margin: 0 auto; border-radius: 8px; padding: 15px;">
-                        <div style="margin-bottom: 15px;">
-                            <button style="background-color: #1DA1F2; color: white; border: none; border-radius: 20px; padding: 8px; width: 100%; font-weight: bold; cursor: pointer; margin-bottom: 10px;">Create account</button>
-                            <button style="background-color: white; color: black; border: 1px solid #ddd; border-radius: 20px; padding: 8px; width: 100%; font-weight: bold; cursor: pointer;">Sign in</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    } else if (hostname.includes('instagram.com')) {
-        return `
-            <div style="padding-top: 20px; background-color: #fff;">
-                <div style="text-align: center; padding: 10px;">
-                    <div style="font-family: 'Brush Script MT', cursive; font-size: 28px; margin-bottom: 20px;">Instagram</div>
-                    <div style="background-color: white; width: 80%; max-width: 300px; margin: 0 auto; border: 1px solid #dbdbdb; border-radius: 1px; padding: 15px;">
-                        <div style="text-align: left; margin-bottom: 15px;">
-                            <div style="height: 20px; background-color: #fafafa; border: 1px solid #dbdbdb; border-radius: 3px; padding: 8px; font-size: 12px; color: #8e8e8e;">Teléfono, usuario o correo electrónico</div>
-                        </div>
-                        <div style="text-align: left; margin-bottom: 15px;">
-                            <div style="height: 20px; background-color: #fafafa; border: 1px solid #dbdbdb; border-radius: 3px; padding: 8px; font-size: 12px; color: #8e8e8e;">Contraseña</div>
-                        </div>
-                        <button style="background-color: #0095F6; color: white; border: none; border-radius: 4px; padding: 8px; width: 100%; font-weight: bold; cursor: pointer;">Iniciar sesión</button>
-                    </div>
+                
+                <div style="color: #666; font-size: 14px; margin-bottom: 30px; border-bottom: 1px solid #ebebeb; padding-bottom: 10px;">
+                    Aproximadamente 1,450,000 resultados (0.62 segundos)
                 </div>
             </div>
         `;
     } else {
-        // Generic website layout
+        // Página principal de Google
         return `
-            <div style="padding-top: 10px;">
-                <div style="height: 30px; background-color: #f8f9fa; display: flex; margin-bottom: 15px;">
-                    <div style="width: 60px; height: 100%; background-color: #e9ecef; margin-right: 10px;"></div>
-                    <div style="width: 60px; height: 100%; background-color: #e9ecef; margin-right: 10px;"></div>
-                    <div style="width: 60px; height: 100%; background-color: #e9ecef;"></div>
-                </div>
-                <div style="display: flex; gap: 20px;">
-                    <div style="width: 70%;">
-                        <div style="height: 30px; background-color: #e9ecef; margin-bottom: 10px; width: 80%;"></div>
-                        <div style="height: 10px; background-color: #e9ecef; margin-bottom: 5px; width: 100%;"></div>
-                        <div style="height: 10px; background-color: #e9ecef; margin-bottom: 5px; width: 95%;"></div>
-                        <div style="height: 10px; background-color: #e9ecef; margin-bottom: 5px; width: 98%;"></div>
-                        <div style="height: 10px; background-color: #e9ecef; margin-bottom: 15px; width: 90%;"></div>
-                        <div style="height: 80px; background-color: #e9ecef; margin-bottom: 15px; width: 100%;"></div>
-                        <div style="height: 10px; background-color: #e9ecef; margin-bottom: 5px; width: 100%;"></div>
-                        <div style="height: 10px; background-color: #e9ecef; margin-bottom: 5px; width: 92%;"></div>
-                        <div style="height: 10px; background-color: #e9ecef; margin-bottom: 5px; width: 96%;"></div>
+            <div style="display: flex; justify-content: center; align-items: center; height: 100%; background-color: white; flex-direction: column;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div style="margin-bottom: 30px;">
+                        <span style="color: #4285F4; font-size: 72px; font-weight: bold;">G</span>
+                        <span style="color: #EA4335; font-size: 72px; font-weight: bold;">o</span>
+                        <span style="color: #FBBC05; font-size: 72px; font-weight: bold;">o</span>
+                        <span style="color: #4285F4; font-size: 72px; font-weight: bold;">g</span>
+                        <span style="color: #34A853; font-size: 72px; font-weight: bold;">l</span>
+                        <span style="color: #EA4335; font-size: 72px; font-weight: bold;">e</span>
                     </div>
-                    <div style="width: 30%;">
-                        <div style="height: 100px; background-color: #e9ecef; margin-bottom: 15px;"></div>
-                        <div style="height: 20px; background-color: #e9ecef; margin-bottom: 5px; width: 80%;"></div>
-                        <div style="height: 10px; background-color: #e9ecef; margin-bottom: 5px; width: 90%;"></div>
-                        <div style="height: 10px; background-color: #e9ecef; margin-bottom: 5px; width: 85%;"></div>
+                    <div style="position: relative; max-width: 580px; margin: 0 auto;">
+                        <div style="display: flex; border: 1px solid #dfe1e5; border-radius: 24px; padding: 10px 15px; flex-direction: row; align-items: center;">
+                            <i class="fas fa-search" style="color: #9aa0a6; margin-right: 10px;"></i>
+                            <input type="text" placeholder="Buscar en Google" style="flex-grow: 1; border: none; outline: none; font-size: 16px;">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -407,99 +608,204 @@ function getSimulatedContent(url, hostname) {
     }
 }
 
-// Function to handle showing browser content
-function showBrowserContent(url) {
-    debugLog(`Showing browser content for: ${url}`);
-    // Clear current content
-    browserFrame.innerHTML = '';
+function generateYahooUI(url) {
+    // Extraer la consulta de búsqueda si existe
+    let searchQuery = "";
+    if (url.includes('search?p=')) {
+        searchQuery = decodeURIComponent(url.split('search?p=')[1].split('&')[0]);
+    }
     
-    // Create loading indicator
-    const loadingContainer = document.createElement('div');
-    loadingContainer.className = 'loading-container';
-    loadingContainer.style.display = 'flex';
-    loadingContainer.style.flexDirection = 'column';
-    loadingContainer.style.alignItems = 'center';
-    loadingContainer.style.justifyContent = 'center';
-    loadingContainer.style.height = '100%';
-    
-    const loadingSpinner = document.createElement('div');
-    loadingSpinner.className = 'loading-spinner';
-    loadingSpinner.style.border = '5px solid rgba(0, 0, 0, 0.1)';
-    loadingSpinner.style.borderTop = '5px solid var(--accent-color)';
-    loadingSpinner.style.borderRadius = '50%';
-    loadingSpinner.style.width = '50px';
-    loadingSpinner.style.height = '50px';
-    loadingSpinner.style.animation = 'spin 1s linear infinite';
-    loadingContainer.appendChild(loadingSpinner);
-    
-    const loadingText = document.createElement('div');
-    loadingText.textContent = 'Cargando página...';
-    loadingText.style.marginTop = '20px';
-    loadingText.style.color = 'var(--text-color)';
-    loadingContainer.appendChild(loadingText);
-    
-    // Add the loading animation keyframes if not already added
-    if (!document.querySelector('#spinner-animation')) {
-        const spinnerStyle = document.createElement('style');
-        spinnerStyle.id = 'spinner-animation';
-        spinnerStyle.textContent = `
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
+    if (searchQuery) {
+        // Resultados de búsqueda de Yahoo
+        return `
+            <div style="font-family: Arial, sans-serif; background-color: white; color: #333; height: 100%;">
+                <div style="background-color: #5f01d1; padding: 15px; display: flex; align-items: center;">
+                    <div style="color: white; font-size: 24px; font-weight: bold; margin-right: 20px;">Yahoo!</div>
+                    <div style="flex-grow: 1;">
+                        <div style="display: flex; width: 100%; background-color: white; border-radius: 4px; padding: 8px 15px;">
+                            <input type="text" value="${searchQuery}" style="flex-grow: 1; border: none; outline: none; font-size: 16px;">
+                            <div style="margin-left: 15px; color: #5f01d1;">
+                                <i class="fas fa-search"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
-        document.head.appendChild(spinnerStyle);
+    } else {
+        // Página principal de Yahoo
+        return `
+            <div style="font-family: Arial, sans-serif; background-color: white; height: 100%;">
+                <div style="background-color: #5f01d1; padding: 15px; display: flex; align-items: center;">
+                    <div style="color: white; font-size: 24px; font-weight: bold; margin-right: 20px;">Yahoo!</div>
+                    <div style="margin-left: auto; color: white;">
+                        <i class="fas fa-user-circle" style="font-size: 24px;"></i>
+                    </div>
+                </div>
+                
+                <div style="padding: 40px 20px; text-align: center;">
+                    <div style="font-size: 48px; font-weight: bold; color: #5f01d1; margin-bottom: 30px;">Yahoo!</div>
+                    
+                    <div style="max-width: 580px; margin: 0 auto;">
+                        <div style="display: flex; border: 1px solid #ccc; border-radius: 4px; padding: 10px 15px;">
+                            <input type="text" placeholder="Buscar en la web" style="flex-grow: 1; border: none; outline: none; font-size: 16px;">
+                            <div style="margin-left: 15px; color: #5f01d1; cursor: pointer;">
+                                <i class="fas fa-search"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function generateFacebookUI() {
+    return `
+        <div style="font-family: Arial, sans-serif; background-color: #f0f2f5; height: 100%; display: flex; flex-direction: column;">
+            <div style="background-color: white; padding: 10px 15px; display: flex; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="color: #1877F2; font-size: 36px; font-weight: bold; margin-right: 15px;">f</div>
+                <div style="flex-grow: 1;">
+                    <div style="display: flex; background-color: #f0f2f5; border-radius: 50px; padding: 8px 15px;">
+                        <i class="fas fa-search" style="color: #65676b; margin-right: 10px;"></i>
+                        <input type="text" placeholder="Buscar en Facebook" style="background: transparent; border: none; outline: none; flex-grow: 1;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateTwitterUI() {
+    return `
+        <div style="font-family: Arial, sans-serif; background-color: #15202B; color: white; height: 100%; display: flex;">
+            <!-- Sidebar -->
+            <div style="width: 250px; padding: 20px; border-right: 1px solid #38444d;">
+                <div style="font-size: 28px; margin-bottom: 30px; color: white;">𝕏</div>
+                
+                <div style="margin-bottom: 20px; display: flex; align-items: center; color: white; font-weight: bold; font-size: 18px;">
+                    <i class="fas fa-home" style="margin-right: 15px; font-size: 24px;"></i>
+                    <span>Inicio</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateInstagramUI() {
+    return `
+        <div style="font-family: Arial, sans-serif; background-color: #fafafa; height: 100%; display: flex; flex-direction: column;">
+            <!-- Header -->
+            <div style="background-color: white; padding: 15px; display: flex; align-items: center; border-bottom: 1px solid #dbdbdb;">
+                <div style="font-family: 'Brush Script MT', cursive; font-size: 24px; font-weight: bold; flex-grow: 1;">Instagram</div>
+                <div style="display: flex; gap: 20px;">
+                    <i class="far fa-plus-square" style="font-size: 24px;"></i>
+                    <i class="far fa-heart" style="font-size: 24px;"></i>
+                    <i class="far fa-paper-plane" style="font-size: 24px;"></i>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateAmazonUI() {
+    return `
+        <div style="font-family: Arial, sans-serif; background-color: #EAEDED; height: 100%;">
+            <!-- Header -->
+            <div style="background-color: #131921; padding: 15px; display: flex; align-items: center; color: white;">
+                <div style="font-size: 24px; font-weight: bold; margin-right: 15px;">amazon</div>
+                
+                <div style="display: flex; flex-grow: 1; margin: 0 15px;">
+                    <input type="text" placeholder="Buscar en Amazon" style="flex-grow: 1; padding: 8px; border: none; outline: none;">
+                    <button style="background-color: #febd69; border: none; padding: 0 10px;">
+                        <i class="fas fa-search" style="color: #333;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateNetflixUI() {
+    return `
+        <div style="font-family: Arial, sans-serif; background-color: #141414; color: white; height: 100%;">
+            <!-- Header -->
+            <div style="padding: 15px; display: flex; align-items: center; position: relative; z-index: 1;">
+                <div style="color: #e50914; font-size: 30px; font-weight: bold; margin-right: 30px;">NETFLIX</div>
+                
+                <div style="display: flex; gap: 20px; font-size: 14px;">
+                    <div style="font-weight: bold;">Inicio</div>
+                    <div>Series</div>
+                    <div>Películas</div>
+                    <div>Novedades populares</div>
+                    <div>Mi lista</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateSpotifyUI() {
+    return `
+        <div style="font-family: Arial, sans-serif; background-color: #121212; color: white; height: 100%; display: flex;">
+            <!-- Sidebar -->
+            <div style="width: 250px; background-color: #000; padding: 20px;">
+                <div style="color: #1DB954; font-size: 24px; font-weight: bold; margin-bottom: 30px;">Spotify</div>
+            </div>
+        </div>
+    `;
+}
+
+function generateWikipediaUI(url) {
+    // Extraer el término de búsqueda o artículo de la URL
+    let article = "Página principal";
+    if (url.includes('/wiki/')) {
+        article = decodeURIComponent(url.split('/wiki/')[1]);
     }
     
-    browserFrame.appendChild(loadingContainer);
-    
-    // Use real navigation through our proxy
-    try {
-        // Create and load iframe with proxied content
-        const iframe = document.createElement('iframe');
-        iframe.style.width = '100%';
-        iframe.style.height = '100%';
-        iframe.style.border = 'none';
-        iframe.style.backgroundColor = '#181822';  // Match our dark theme
-        
-        // Add event listener for when iframe loads
-        iframe.addEventListener('load', () => {
-            // When loaded, remove the loading indicator
-            loadingContainer.style.display = 'none';
+    return `
+        <div style="font-family: Arial, sans-serif; background-color: white; color: #222; height: 100%; display: flex; flex-direction: column;">
+            <!-- Header -->
+            <div style="padding: 0.5em 1em; display: flex; align-items: center; border-bottom: 1px solid #a7d7f9; background-color: #f6f6f6;">
+                <div style="font-size: 24px; font-weight: bold; margin-right: 20px;">Wikipedia</div>
+                
+                <div style="flex-grow: 1;">
+                    <div style="display: flex;">
+                        <input type="text" value="${article}" style="flex-grow: 1; padding: 8px; border: 1px solid #a2a9b1; border-right: none;">
+                        <button style="background-color: #f8f9fa; border: 1px solid #a2a9b1; padding: 0 10px;">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateGenericWebsiteUI(url, hostname) {
+    return `
+        <div style="font-family: Arial, sans-serif; height: 100%; display: flex; flex-direction: column;">
+            <!-- Header -->
+            <div style="background-color: #333; color: white; padding: 15px; display: flex; align-items: center;">
+                <div style="font-size: 24px; font-weight: bold;">${hostname}</div>
+                <div style="margin-left: auto; display: flex; gap: 20px;">
+                    <div>Inicio</div>
+                    <div>Acerca de</div>
+                    <div>Servicios</div>
+                    <div>Contacto</div>
+                </div>
+            </div>
             
-            // Play sound effect
-            SoundEffects.playSuccess();
-        });
-        
-        // Set iframe source - we need to use special handling for static hosts
-        if (url === 'home') {
-            // For home, just go to home screen
-            goHome();
-            return;
-        } else if (!url.includes('://') && !url.startsWith('www.')) {
-            // Treat as a search query if not a URL
-            const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
-            createSimulatedContent(searchUrl, iframe, loadingContainer);
-        } else {
-            // Standardize URL format
-            let fullUrl = url;
-            if (url.startsWith('www.')) {
-                fullUrl = 'https://' + url;
-            } else if (!url.includes('://')) {
-                fullUrl = 'https://' + url;
-            }
-            
-            // For static host environment, simulate the navigation
-            createSimulatedContent(fullUrl, iframe, loadingContainer);
-        }
-        
-        // Add iframe to the browser frame
-        browserFrame.appendChild(iframe);
-    } catch (error) {
-        console.error('Navigation error:', error);
-        showErrorMessage(`Error al cargar la página: ${error.message}`);
-        SoundEffects.playError();
-    }
+            <!-- Hero section -->
+            <div style="background-color: #f5f5f5; padding: 50px 20px; text-align: center;">
+                <h1 style="font-size: 36px; margin-bottom: 20px;">Bienvenido a ${hostname}</h1>
+                <p style="font-size: 18px; color: #666; max-width: 800px; margin: 0 auto 30px auto;">
+                    Esta es una simulación de un sitio web genérico en MayBrowser. El contenido real de ${url} no puede cargarse debido a limitaciones técnicas en hosts estáticos.
+                </p>
+                <button style="background-color: #007bff; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 5px;">Saber más</button>
+            </div>
+        </div>
+    `;
 }
 
 function showErrorMessage(message) {
@@ -540,9 +846,13 @@ function goBack() {
         urlInput.value = browserHistory[currentHistoryIndex];
         
         updateButtonStates();
-        SoundEffects.playClick();
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playClick) {
+            SoundEffects.playClick();
+        }
     } else {
-        SoundEffects.playError();
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playError) {
+            SoundEffects.playError();
+        }
     }
 }
 
@@ -553,18 +863,26 @@ function goForward() {
         urlInput.value = browserHistory[currentHistoryIndex];
         
         updateButtonStates();
-        SoundEffects.playClick();
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playClick) {
+            SoundEffects.playClick();
+        }
     } else {
-        SoundEffects.playError();
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playError) {
+            SoundEffects.playError();
+        }
     }
 }
 
 function refreshPage() {
     if (browserHistory.length > 0) {
         showBrowserContent(browserHistory[currentHistoryIndex]);
-        SoundEffects.playClick();
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playClick) {
+            SoundEffects.playClick();
+        }
     } else {
-        SoundEffects.playError();
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playError) {
+            SoundEffects.playError();
+        }
     }
 }
 
@@ -606,7 +924,9 @@ function goHome() {
         { url: 'https://www.youtube.com', icon: 'fab fa-youtube', name: 'YouTube' },
         { url: 'https://www.facebook.com', icon: 'fab fa-facebook', name: 'Facebook' },
         { url: 'https://www.twitter.com', icon: 'fab fa-twitter', name: 'Twitter' },
-        { url: 'https://www.instagram.com', icon: 'fab fa-instagram', name: 'Instagram' }
+        { url: 'https://www.instagram.com', icon: 'fab fa-instagram', name: 'Instagram' },
+        { url: 'https://espanol.yahoo.com', icon: 'fab fa-yahoo', name: 'Yahoo' },
+        { url: 'https://www.amazon.com', icon: 'fab fa-amazon', name: 'Amazon' }
     ];
     
     sites.forEach(site => {
@@ -667,7 +987,9 @@ function goHome() {
     }
     
     updateButtonStates();
-    SoundEffects.playNavigation();
+    if (typeof SoundEffects !== 'undefined' && SoundEffects.playNavigation) {
+        SoundEffects.playNavigation();
+    }
 }
 
 function updateButtonStates() {
@@ -694,10 +1016,14 @@ function updateButtonStates() {
 function toggleMenu() {
     if (menuPanel.style.display === 'none' || menuPanel.style.display === '') {
         menuPanel.style.display = 'flex';
-        SoundEffects.playOpen();
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playOpen) {
+            SoundEffects.playOpen();
+        }
     } else {
         menuPanel.style.display = 'none';
-        SoundEffects.playClose();
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playClose) {
+            SoundEffects.playClose();
+        }
     }
 }
 
@@ -705,7 +1031,9 @@ function toggleMenu() {
 function showBookmarks() {
     // For now just show a message
     showInfoMessage("Bookmarks", "Esta función estará disponible próximamente.");
-    SoundEffects.playClick();
+    if (typeof SoundEffects !== 'undefined' && SoundEffects.playClick) {
+        SoundEffects.playClick();
+    }
 }
 
 // History functions
@@ -806,14 +1134,18 @@ function showHistory() {
     historyContainer.appendChild(backButton);
     browserFrame.appendChild(historyContainer);
     
-    SoundEffects.playClick();
+    if (typeof SoundEffects !== 'undefined' && SoundEffects.playClick) {
+        SoundEffects.playClick();
+    }
 }
 
 // Settings functions
 function showSettings() {
     // For now just show a message
     showInfoMessage("Configuración", "Esta función estará disponible próximamente.");
-    SoundEffects.playClick();
+    if (typeof SoundEffects !== 'undefined' && SoundEffects.playClick) {
+        SoundEffects.playClick();
+    }
 }
 
 // About functions
@@ -856,56 +1188,86 @@ function showAbout() {
     aboutContainer.appendChild(versionInfo);
     
     const description = document.createElement('div');
-    description.className = 'about-description';
-    description.style.maxWidth = '700px';
+    description.style.maxWidth = '600px';
     description.style.margin = '0 auto 40px';
-    description.style.backgroundColor = 'rgba(42, 42, 64, 0.6)';
-    description.style.padding = '25px';
-    description.style.borderRadius = '15px';
-    
-    const descriptionText = document.createElement('p');
-    descriptionText.textContent = 'MayBrowser es un navegador web con temática gaming diseñado para ofrecer una experiencia de navegación única con un ambiente nocturno con estrellas y luna. Cuenta con integración de IA Gemini para asistencia en la navegación.';
-    descriptionText.style.lineHeight = '1.6';
-    descriptionText.style.marginBottom = '20px';
-    description.appendChild(descriptionText);
-    
-    const features = document.createElement('div');
-    features.innerHTML = `
-        <h3 style="margin-bottom: 15px; color: var(--accent-color);">Características</h3>
-        <ul style="list-style: none; text-align: left; padding: 0;">
-            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">
-                <i class="fas fa-check" style="color: var(--accent-color); position: absolute; left: 0;"></i>
-                Interfaz de usuario con tema nocturno
-            </li>
-            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">
-                <i class="fas fa-check" style="color: var(--accent-color); position: absolute; left: 0;"></i>
-                Efectos de sonido inmersivos
-            </li>
-            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">
-                <i class="fas fa-check" style="color: var(--accent-color); position: absolute; left: 0;"></i>
-                Asistente IA Gemini integrado
-            </li>
-            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">
-                <i class="fas fa-check" style="color: var(--accent-color); position: absolute; left: 0;"></i>
-                Navegación web rápida
-            </li>
-            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">
-                <i class="fas fa-check" style="color: var(--accent-color); position: absolute; left: 0;"></i>
-                Diseño adaptable para dispositivos móviles
-            </li>
-        </ul>
+    description.style.lineHeight = '1.6';
+    description.style.color = 'var(--text-color)';
+    description.innerHTML = `
+        <p>MayBrowser es un navegador web experimental con temática espacial y de juegos, 
+        diseñado para proporcionar una experiencia de navegación inmersiva y visual.</p>
+        
+        <p>Este navegador simula el funcionamiento de un navegador web real en un entorno 
+        de host estático, utilizando tecnologías web estándar para recrear la experiencia 
+        de navegación.</p>
     `;
-    description.appendChild(features);
     aboutContainer.appendChild(description);
     
-    // Add home button
+    const featuresTitle = document.createElement('h2');
+    featuresTitle.textContent = 'Características';
+    featuresTitle.style.fontSize = '1.8rem';
+    featuresTitle.style.marginBottom = '20px';
+    featuresTitle.style.color = 'var(--accent-color)';
+    aboutContainer.appendChild(featuresTitle);
+    
+    const featuresList = document.createElement('ul');
+    featuresList.style.listStyleType = 'none';
+    featuresList.style.padding = '0';
+    featuresList.style.maxWidth = '600px';
+    featuresList.style.margin = '0 auto 40px';
+    featuresList.style.textAlign = 'left';
+    
+    const features = [
+        { icon: 'fa-moon', text: 'Tema oscuro con estrellas animadas.' },
+        { icon: 'fa-robot', text: 'Integración con IA para asistencia de navegación.' },
+        { icon: 'fa-volume-up', text: 'Efectos de sonido inmersivos.' },
+        { icon: 'fa-history', text: 'Historial de navegación.' },
+        { icon: 'fa-desktop', text: 'Simulación de sitios web populares.' }
+    ];
+    
+    features.forEach(feature => {
+        const item = document.createElement('li');
+        item.style.margin = '15px 0';
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        
+        const icon = document.createElement('i');
+        icon.className = `fas ${feature.icon}`;
+        icon.style.color = 'var(--accent-color)';
+        icon.style.fontSize = '1.2rem';
+        icon.style.marginRight = '15px';
+        icon.style.width = '20px';
+        item.appendChild(icon);
+        
+        const text = document.createElement('span');
+        text.textContent = feature.text;
+        item.appendChild(text);
+        
+        featuresList.appendChild(item);
+    });
+    
+    aboutContainer.appendChild(featuresList);
+    
+    const creditsTitle = document.createElement('h2');
+    creditsTitle.textContent = 'Créditos';
+    creditsTitle.style.fontSize = '1.5rem';
+    creditsTitle.style.marginBottom = '20px';
+    creditsTitle.style.color = 'var(--accent-color)';
+    aboutContainer.appendChild(creditsTitle);
+    
+    const credits = document.createElement('p');
+    credits.style.fontSize = '0.9rem';
+    credits.style.color = 'var(--text-secondary)';
+    credits.innerHTML = 'Creado con ❤️ por el equipo de MayBrowser<br>2025';
+    aboutContainer.appendChild(credits);
+    
+    // Add a back button
     const backButton = document.createElement('button');
-    backButton.textContent = 'Volver a la Página de Inicio';
-    backButton.style.padding = '10px 20px';
+    backButton.textContent = 'Volver';
+    backButton.style.marginTop = '40px';
+    backButton.style.padding = '10px 30px';
     backButton.style.backgroundColor = 'var(--primary-color)';
     backButton.style.border = 'none';
     backButton.style.borderRadius = '5px';
-    backButton.style.color = 'white';
     backButton.style.cursor = 'pointer';
     backButton.style.transition = 'all 0.2s ease';
     
@@ -918,39 +1280,51 @@ function showAbout() {
     });
     
     backButton.addEventListener('click', () => {
-        goHome();
+        if (browserHistory.length > 0) {
+            const currentUrl = browserHistory[currentHistoryIndex];
+            if (currentUrl === 'home') {
+                goHome();
+            } else {
+                showBrowserContent(currentUrl);
+            }
+        } else {
+            goHome();
+        }
     });
     
     aboutContainer.appendChild(backButton);
     browserFrame.appendChild(aboutContainer);
     
-    SoundEffects.playClick();
+    if (typeof SoundEffects !== 'undefined' && SoundEffects.playClick) {
+        SoundEffects.playClick();
+    }
 }
 
+// Utility function to show info message
 function showInfoMessage(title, message) {
     browserFrame.innerHTML = '';
     
-    const infoContainer = document.createElement('div');
-    infoContainer.className = 'info-container';
-    infoContainer.style.display = 'flex';
-    infoContainer.style.flexDirection = 'column';
-    infoContainer.style.alignItems = 'center';
-    infoContainer.style.justifyContent = 'center';
-    infoContainer.style.height = '100%';
-    infoContainer.style.padding = '20px';
+    const messageContainer = document.createElement('div');
+    messageContainer.style.display = 'flex';
+    messageContainer.style.flexDirection = 'column';
+    messageContainer.style.alignItems = 'center';
+    messageContainer.style.justifyContent = 'center';
+    messageContainer.style.height = '100%';
+    messageContainer.style.padding = '20px';
+    messageContainer.style.textAlign = 'center';
     
     const titleElem = document.createElement('h2');
     titleElem.textContent = title;
     titleElem.style.marginBottom = '20px';
     titleElem.style.color = 'var(--accent-color)';
-    infoContainer.appendChild(titleElem);
+    messageContainer.appendChild(titleElem);
     
     const messageElem = document.createElement('p');
     messageElem.textContent = message;
     messageElem.style.fontSize = '1.1rem';
     messageElem.style.marginBottom = '30px';
-    messageElem.style.textAlign = 'center';
-    infoContainer.appendChild(messageElem);
+    messageElem.style.maxWidth = '600px';
+    messageContainer.appendChild(messageElem);
     
     const backButton = document.createElement('button');
     backButton.textContent = 'Volver';
@@ -958,101 +1332,53 @@ function showInfoMessage(title, message) {
     backButton.style.backgroundColor = 'var(--primary-color)';
     backButton.style.border = 'none';
     backButton.style.borderRadius = '5px';
-    backButton.style.color = 'white';
     backButton.style.cursor = 'pointer';
     
     backButton.addEventListener('click', () => {
-        goHome();
+        if (browserHistory.length > 0) {
+            const currentUrl = browserHistory[currentHistoryIndex];
+            if (currentUrl === 'home') {
+                goHome();
+            } else {
+                showBrowserContent(currentUrl);
+            }
+        } else {
+            goHome();
+        }
     });
     
-    infoContainer.appendChild(backButton);
-    
-    browserFrame.appendChild(infoContainer);
+    messageContainer.appendChild(backButton);
+    browserFrame.appendChild(messageContainer);
 }
 
-// Create animated stars background
+// Function to create stars
 function createStars() {
-    const starContainer = document.getElementById('starBackground');
-    if (!starContainer) return;
+    const starBackground = document.getElementById('starBackground');
+    if (!starBackground) return;
     
-    // Clear existing stars
-    starContainer.innerHTML = '';
+    // Remove any existing stars
+    starBackground.innerHTML = '';
     
-    // Create small star SVG elements
-    const smallStarCount = Math.floor(window.innerWidth / 15);
-    for (let i = 0; i < smallStarCount; i++) {
+    // Create stars
+    for (let i = 0; i < 100; i++) {
         const star = document.createElement('div');
-        star.className = 'star small';
-        star.style.left = `${Math.random() * 100}%`;
+        star.className = 'star';
         star.style.top = `${Math.random() * 100}%`;
-        star.style.animationDelay = `${Math.random() * 8}s`;
-        star.style.animationDuration = `${3 + Math.random() * 4}s`;
-        
-        const starSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        starSvg.setAttribute("viewBox", "0 0 24 24");
-        starSvg.setAttribute("width", "100%");
-        starSvg.setAttribute("height", "100%");
-        
-        const starUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
-        starUse.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "assets/star.svg#star");
-        starSvg.appendChild(starUse);
-        
-        star.appendChild(starSvg);
-        starContainer.appendChild(star);
-    }
-    
-    // Create medium star SVG elements
-    const mediumStarCount = Math.floor(window.innerWidth / 40);
-    for (let i = 0; i < mediumStarCount; i++) {
-        const star = document.createElement('div');
-        star.className = 'star medium';
         star.style.left = `${Math.random() * 100}%`;
-        star.style.top = `${Math.random() * 100}%`;
-        star.style.animationDelay = `${Math.random() * 8}s`;
-        star.style.animationDuration = `${4 + Math.random() * 4}s`;
+        star.style.animationDelay = `${Math.random() * 5}s`;
         
-        const starSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        starSvg.setAttribute("viewBox", "0 0 24 24");
-        starSvg.setAttribute("width", "100%");
-        starSvg.setAttribute("height", "100%");
+        // Random size for the stars
+        const size = Math.random() * 3 + 1;
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
         
-        const starUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
-        starUse.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "assets/star.svg#star");
-        starSvg.appendChild(starUse);
-        
-        star.appendChild(starSvg);
-        starContainer.appendChild(star);
+        starBackground.appendChild(star);
     }
-    
-    // Create large star SVG elements
-    const largeStarCount = Math.floor(window.innerWidth / 100);
-    for (let i = 0; i < largeStarCount; i++) {
-        const star = document.createElement('div');
-        star.className = 'star large';
-        star.style.left = `${Math.random() * 100}%`;
-        star.style.top = `${Math.random() * 100}%`;
-        star.style.animationDelay = `${Math.random() * 8}s`;
-        star.style.animationDuration = `${5 + Math.random() * 4}s`;
-        
-        const starSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        starSvg.setAttribute("viewBox", "0 0 24 24");
-        starSvg.setAttribute("width", "100%");
-        starSvg.setAttribute("height", "100%");
-        
-        const starUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
-        starUse.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "assets/star.svg#star");
-        starSvg.appendChild(starUse);
-        
-        star.appendChild(starSvg);
-        starContainer.appendChild(star);
-    }
-    
-    // Set up moon
-    const moon = document.createElement('div');
-    moon.className = 'moon';
-    moon.innerHTML = `<svg viewBox="0 0 24 24" width="100%" height="100%">
-        <use href="assets/moon.svg#moon"></use>
-    </svg>`;
-    starContainer.appendChild(moon);
-}// Expose navigateToUrl as a global function to make it accessible from HTML
+}
+
+// Expose global functions for access from iframe or HTML
 window.navigateToUrl = navigateToUrl;
+window.goBack = goBack;
+window.goForward = goForward;
+window.refreshPage = refreshPage;
+window.goHome = goHome;
