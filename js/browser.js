@@ -78,51 +78,81 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear current content
         browserFrame.innerHTML = '';
         
-        // Create content container
-        const contentContainer = document.createElement('div');
-        contentContainer.className = 'browser-content-display';
-        contentContainer.style.padding = '20px';
-        contentContainer.style.height = '100%';
-        contentContainer.style.overflowY = 'auto';
-        contentContainer.style.color = 'white';
+        // Create loading indicator
+        const loadingContainer = document.createElement('div');
+        loadingContainer.className = 'loading-container';
+        loadingContainer.style.display = 'flex';
+        loadingContainer.style.flexDirection = 'column';
+        loadingContainer.style.alignItems = 'center';
+        loadingContainer.style.justifyContent = 'center';
+        loadingContainer.style.height = '100%';
         
-        // Display message about navigation
-        const messageElem = document.createElement('div');
-        messageElem.style.textAlign = 'center';
-        messageElem.style.marginTop = '50px';
+        const loadingSpinner = document.createElement('div');
+        loadingSpinner.className = 'loading-spinner';
+        loadingSpinner.style.border = '5px solid rgba(0, 0, 0, 0.1)';
+        loadingSpinner.style.borderTop = '5px solid var(--accent-color)';
+        loadingSpinner.style.borderRadius = '50%';
+        loadingSpinner.style.width = '50px';
+        loadingSpinner.style.height = '50px';
+        loadingSpinner.style.animation = 'spin 1s linear infinite';
+        loadingContainer.appendChild(loadingSpinner);
         
-        const iconElem = document.createElement('i');
-        iconElem.className = 'fas fa-globe';
-        iconElem.style.fontSize = '4rem';
-        iconElem.style.color = 'var(--accent-color)';
-        iconElem.style.marginBottom = '20px';
-        messageElem.appendChild(iconElem);
+        const loadingText = document.createElement('div');
+        loadingText.textContent = 'Cargando página...';
+        loadingText.style.marginTop = '20px';
+        loadingText.style.color = 'var(--text-color)';
+        loadingContainer.appendChild(loadingText);
         
-        const headingElem = document.createElement('h2');
-        headingElem.textContent = 'Navegación Simulada';
-        headingElem.style.marginBottom = '20px';
-        headingElem.style.color = 'var(--text-color)';
-        messageElem.appendChild(headingElem);
+        // Add the loading animation keyframes if not already added
+        if (!document.querySelector('#spinner-animation')) {
+            const spinnerStyle = document.createElement('style');
+            spinnerStyle.id = 'spinner-animation';
+            spinnerStyle.textContent = `
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(spinnerStyle);
+        }
         
-        const urlElem = document.createElement('div');
-        urlElem.textContent = url;
-        urlElem.style.fontSize = '1.2rem';
-        urlElem.style.padding = '10px';
-        urlElem.style.background = 'rgba(0,0,0,0.2)';
-        urlElem.style.borderRadius = '5px';
-        urlElem.style.marginBottom = '20px';
-        urlElem.style.wordBreak = 'break-all';
-        messageElem.appendChild(urlElem);
+        browserFrame.appendChild(loadingContainer);
         
-        const infoElem = document.createElement('p');
-        infoElem.textContent = 'En un entorno real, este navegador abriría la página web solicitada. Por limitaciones técnicas, estamos simulando la navegación.';
-        infoElem.style.maxWidth = '600px';
-        infoElem.style.margin = '0 auto';
-        infoElem.style.lineHeight = '1.6';
-        messageElem.appendChild(infoElem);
-        
-        contentContainer.appendChild(messageElem);
-        browserFrame.appendChild(contentContainer);
+        // Use real navigation through our proxy
+        try {
+            // Create and load iframe with proxied content
+            const iframe = document.createElement('iframe');
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            iframe.style.backgroundColor = '#181822';  // Match our dark theme
+            
+            // Add event listener for when iframe loads
+            iframe.addEventListener('load', () => {
+                // When loaded, remove the loading indicator
+                loadingContainer.style.display = 'none';
+                
+                // Play sound effect
+                SoundEffects.playSuccess();
+            });
+            
+            // Set iframe source to our proxy endpoint
+            if (url === 'home') {
+                // For home, just go to home screen
+                goHome();
+                return;
+            } else {
+                // Use our proxy server
+                iframe.src = `/proxy?url=${encodeURIComponent(url)}`;
+            }
+            
+            // Add iframe to the browser frame
+            browserFrame.appendChild(iframe);
+        } catch (error) {
+            console.error('Navigation error:', error);
+            showErrorMessage(`Error al cargar la página: ${error.message}`);
+            SoundEffects.playError();
+        }
     }
     
     function showErrorMessage(message) {
