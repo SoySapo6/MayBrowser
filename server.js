@@ -76,7 +76,9 @@ app.get('/proxy', async (req, res) => {
                         }
                     }
                     
-                    $(link).attr('href', `/proxy?url=${encodeURIComponent(absoluteUrl)}`);
+                    // Use origin-based URL for proxy to work from any host
+                    const hostUrl = `${req.protocol}://${req.get('host')}`;
+                    $(link).attr('href', `${hostUrl}/proxy?url=${encodeURIComponent(absoluteUrl)}`);
                     $(link).attr('target', '_self');
                 } catch (e) {
                     console.error(`Error processing link href: ${href}`, e);
@@ -156,7 +158,7 @@ app.get('/proxy', async (req, res) => {
         // Add a header to allow going back to MayBrowser
         $('body').prepend(`
             <div class="maybrowser-header">
-                <button class="maybrowser-back-btn" onclick="window.location.href='/'">← Volver a MayBrowser</button>
+                <button class="maybrowser-back-btn" onclick="window.location.href='${req.protocol}://${req.get('host')}/'">← Volver a MayBrowser</button>
                 <span>Viendo: ${url}</span>
             </div>
         `);
@@ -243,7 +245,7 @@ app.get('/proxy', async (req, res) => {
                 <div class="url">${url}</div>
                 <p>Es posible que la web no esté disponible o que no se pueda acceder a través del proxy.</p>
                 <div class="error-details">${error.message}</div>
-                <button class="back-button" onclick="window.location.href='/'">Volver a MayBrowser</button>
+                <button class="back-button" onclick="window.location.href='${req.protocol}://${req.get('host')}/'">Volver a MayBrowser</button>
             </div>
         </body>
         </html>
@@ -260,6 +262,15 @@ app.get('/', (req, res) => {
     
     // Serve the main HTML file
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Handle direct route access without query parameters
+app.get('/proxy', (req, res) => {
+    // If no URL specified, redirect to home
+    if (!req.query.url) {
+        console.log('Proxy request without URL, redirecting to home');
+        return res.redirect('/');
+    }
 });
 
 // Start server

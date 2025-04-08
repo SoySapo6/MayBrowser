@@ -142,8 +142,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 goHome();
                 return;
             } else {
-                // Use our proxy server
-                iframe.src = `/proxy?url=${encodeURIComponent(url)}`;
+                // Use our proxy server with full URL to ensure it works from any host
+                const currentUrl = window.location.origin;
+                iframe.src = `${currentUrl}/proxy?url=${encodeURIComponent(url)}`;
             }
             
             // Add iframe to the browser frame
