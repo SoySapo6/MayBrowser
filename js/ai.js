@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiMessages = document.getElementById('aiMessages');
     
     // API configuration
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyCYWNbM2ZgdDSp9NlFxTgp0Wtwaaw7dyRc';
+    const GEMINI_API_KEY = 'AIzaSyCYWNbM2ZgdDSp9NlFxTgp0Wtwaaw7dyRc'; // Clave API
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
     
     // Toggle AI Panel
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function sendToGemini(query) {
         try {
             // Show loading indicator
-            addMessage('Thinking...');
+            addMessage('Pensando...');
             
             // Play AI thinking sound
             SoundEffects.playProcessing();
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
                 aiResponse = data.candidates[0].content.parts[0].text;
             } else {
-                aiResponse = "I'm sorry, I couldn't process your request.";
+                aiResponse = "Lo siento, no pude procesar tu solicitud.";
             }
             
             // Add AI response
@@ -92,12 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error calling Gemini API:', error);
             
             // Remove loading message
-            if (aiMessages.lastChild && aiMessages.lastChild.textContent === 'Thinking...') {
+            if (aiMessages.lastChild && aiMessages.lastChild.textContent === 'Pensando...') {
                 aiMessages.removeChild(aiMessages.lastChild);
             }
             
             // Show error message
-            addMessage("Sorry, I encountered an error while processing your request. Please try again later.");
+            addMessage("Lo siento, encontré un error al procesar tu solicitud. Por favor intenta más tarde.");
             
             // Play error sound
             SoundEffects.playError();
