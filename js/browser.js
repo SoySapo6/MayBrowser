@@ -35,6 +35,17 @@ function initializeBrowser() {
         }
     });
     
+    // URL form submission
+    document.getElementById('urlForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        navigateToUrl(urlInput.value);
+    });
+    
+    document.getElementById('goButton').addEventListener('click', (e) => {
+        e.preventDefault();
+        navigateToUrl(urlInput.value);
+    });
+    
     // Browser control buttons
     backButton.addEventListener('click', goBack);
     forwardButton.addEventListener('click', goForward);
