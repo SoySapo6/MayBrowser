@@ -226,9 +226,9 @@ function showBrowserContent(url) {
                 processedUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(url)}`;
             } else {
                 // Use DuckDuckGo instead of Google
-                processedUrl = `https://duckduckgo.com/?q=${encodeURIComponent(url)}`;
+                processedUrl = `https://www.bing.com/search?q=${encodeURIComponent(url)}`;
                 showNotification = true;
-                notificationMessage = 'Utilizando DuckDuckGo como motor de búsqueda alternativo por limitaciones de iFrame con Google.';
+                notificationMessage = 'Utilizando Bing como motor de búsqueda alternativo por limitaciones de iFrame con Google.';
             }
         } else {
             // Standardize URL format
@@ -247,28 +247,28 @@ function showBrowserContent(url) {
                 let videoId = '';
                 if (formattedUrl.includes('watch?v=')) {
                     videoId = formattedUrl.split('watch?v=')[1].split('&')[0];
-                    processedUrl = `https://yewtu.be/watch?v=${videoId}`;
+                    processedUrl = `https://www.bitchute.com/search?query=${videoId}/`;
                 } else if (formattedUrl.includes('youtu.be/')) {
                     videoId = formattedUrl.split('youtu.be/')[1].split('?')[0];
-                    processedUrl = `https://yewtu.be/watch?v=${videoId}`;
+                    processedUrl = `https://www.bitchute.com/search?query=${videoId}/`;
                 } else {
                     // Just go to the homepage
-                    processedUrl = 'https://yewtu.be/';
+                    processedUrl = 'https://www.bitchute.com/';
                 }
                 
                 showNotification = true;
-                notificationMessage = 'Utilizando Yewtu.be como alternativa a YouTube, ya que YouTube no permite ser mostrado en iFrames.';
+                notificationMessage = 'Utilizando bitchute como alternativa a YouTube, ya que YouTube no permite ser mostrado en iFrames.';
             } else if (formattedUrl.includes('google.com')) {
                 // Redirect Google searches to DuckDuckGo
                 if (formattedUrl.includes('search?q=')) {
                     const searchQuery = formattedUrl.split('search?q=')[1].split('&')[0];
-                    processedUrl = `https://duckduckgo.com/?q=${searchQuery}`;
+                    processedUrl = `https://www.bing.com/search?q=${searchQuery}`;
                 } else {
-                    processedUrl = 'https://duckduckgo.com/';
+                    processedUrl = 'https://www.bing.com/';
                 }
                 
                 showNotification = true;
-                notificationMessage = 'Utilizando DuckDuckGo como alternativa a Google, ya que Google no permite ser mostrado en iFrames.';
+                notificationMessage = 'Utilizando Bing como alternativa a Google, ya que Google no permite ser mostrado en iFrames.';
             } else {
                 processedUrl = formattedUrl;
             }
