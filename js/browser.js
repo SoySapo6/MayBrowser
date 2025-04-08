@@ -217,22 +217,60 @@ function showBrowserContent(url) {
         
         // Process the URL correctly
         let processedUrl;
+        let showNotification = false;
+        let notificationMessage = '';
         
         if (!url.includes('://') && !url.startsWith('www.')) {
             // Treat as a search query if not a URL
             if (url.toLowerCase().includes('yahoo')) {
                 processedUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(url)}`;
             } else {
-                processedUrl = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+                // Use DuckDuckGo instead of Google
+                processedUrl = `https://duckduckgo.com/?q=${encodeURIComponent(url)}`;
+                showNotification = true;
+                notificationMessage = 'Utilizando DuckDuckGo como motor de búsqueda alternativo por limitaciones de iFrame con Google.';
             }
         } else {
             // Standardize URL format
+            let formattedUrl;
             if (url.startsWith('www.')) {
-                processedUrl = 'https://' + url;
+                formattedUrl = 'https://' + url;
             } else if (!url.includes('://')) {
-                processedUrl = 'https://' + url;
+                formattedUrl = 'https://' + url;
             } else {
-                processedUrl = url;
+                formattedUrl = url;
+            }
+            
+            // Check for YouTube and redirect to Invidious
+            if (formattedUrl.includes('youtube.com') || formattedUrl.includes('youtu.be')) {
+                // Extract video ID if present
+                let videoId = '';
+                if (formattedUrl.includes('watch?v=')) {
+                    videoId = formattedUrl.split('watch?v=')[1].split('&')[0];
+                    processedUrl = `https://yewtu.be/watch?v=${videoId}`;
+                } else if (formattedUrl.includes('youtu.be/')) {
+                    videoId = formattedUrl.split('youtu.be/')[1].split('?')[0];
+                    processedUrl = `https://yewtu.be/watch?v=${videoId}`;
+                } else {
+                    // Just go to the homepage
+                    processedUrl = 'https://yewtu.be/';
+                }
+                
+                showNotification = true;
+                notificationMessage = 'Utilizando Yewtu.be como alternativa a YouTube, ya que YouTube no permite ser mostrado en iFrames.';
+            } else if (formattedUrl.includes('google.com')) {
+                // Redirect Google searches to DuckDuckGo
+                if (formattedUrl.includes('search?q=')) {
+                    const searchQuery = formattedUrl.split('search?q=')[1].split('&')[0];
+                    processedUrl = `https://duckduckgo.com/?q=${searchQuery}`;
+                } else {
+                    processedUrl = 'https://duckduckgo.com/';
+                }
+                
+                showNotification = true;
+                notificationMessage = 'Utilizando DuckDuckGo como alternativa a Google, ya que Google no permite ser mostrado en iFrames.';
+            } else {
+                processedUrl = formattedUrl;
             }
         }
         
@@ -257,7 +295,7 @@ function showBrowserContent(url) {
             corsWarning.style.fontSize = '12px';
             corsWarning.style.textAlign = 'center';
             corsWarning.style.zIndex = '1000';
-            corsWarning.textContent = 'Si la página no carga, es posible que tenga restricciones de seguridad (CORS) que impidan mostrarla en un iframe.';
+            corsWarning.textContent = showNotification ? notificationMessage : 'Si la página no carga, es posible que tenga restricciones de seguridad (CORS) que impidan mostrarla en un iframe.';
             corsWarning.style.opacity = '0';
             corsWarning.style.transition = 'opacity 0.5s';
             
@@ -266,7 +304,10 @@ function showBrowserContent(url) {
                 if (corsWarning.parentNode) { // Check if still in DOM
                     corsWarning.style.opacity = '1';
                     
-                    // Hide after 5 seconds
+                    // For notification messages about alternative sites, keep them visible longer
+                    const hideTimeout = showNotification ? 10000 : 5000;
+                    
+                    // Hide after timeout
                     setTimeout(() => {
                         if (corsWarning.parentNode) {
                             corsWarning.style.opacity = '0';
@@ -277,9 +318,9 @@ function showBrowserContent(url) {
                                 }
                             }, 500);
                         }
-                    }, 5000);
+                    }, hideTimeout);
                 }
-            }, 3000);
+            }, 1000);
             
             browserFrame.appendChild(corsWarning);
             
