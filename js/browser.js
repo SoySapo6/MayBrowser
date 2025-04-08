@@ -183,59 +183,113 @@ function showBrowserContent(url) {
     browserFrame.appendChild(loadingContainer);
     
     try {
-        // Create and load iframe with simulated content
+        // Handle home page specially
+        if (url === 'home') {
+            goHome();
+            return;
+        }
+        
+        // Create and load iframe with actual website content
         const iframe = document.createElement('iframe');
         iframe.style.width = '100%';
         iframe.style.height = '100%';
         iframe.style.border = 'none';
-        iframe.style.backgroundColor = '#181822';  // Match our dark theme
+        iframe.style.backgroundColor = '#fff';  
         
-        // Add event listener for when iframe loads
+        // Add event listeners for success and failure
         iframe.addEventListener('load', () => {
             // When loaded, remove the loading indicator
             loadingContainer.style.display = 'none';
             
-            // Play sound effect
+            // Play success sound effect
             if (typeof SoundEffects !== 'undefined' && SoundEffects.playSuccess) {
                 SoundEffects.playSuccess();
             }
         });
         
-        // Set iframe source - we need to use special handling for static hosts
-        if (url === 'home') {
-            // For home, just go to home screen
-            goHome();
-            return;
-        } else if (!url.includes('://') && !url.startsWith('www.')) {
-            // Treat as a search query if not a URL
-            let searchUrl;
-            if (url.toLowerCase().includes('yahoo')) {
-                searchUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(url)}`;
-            } else {
-                searchUrl = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+        iframe.addEventListener('error', () => {
+            loadingContainer.style.display = 'none';
+            showErrorMessage(`No se pudo cargar ${url}. Es posible que el sitio no permita ser mostrado en un iframe.`);
+            if (typeof SoundEffects !== 'undefined' && SoundEffects.playError) {
+                SoundEffects.playError();
             }
-            createSimulatedContent(searchUrl, iframe, loadingContainer);
+        });
+        
+        // Process the URL correctly
+        let processedUrl;
+        
+        if (!url.includes('://') && !url.startsWith('www.')) {
+            // Treat as a search query if not a URL
+            if (url.toLowerCase().includes('yahoo')) {
+                processedUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(url)}`;
+            } else {
+                processedUrl = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+            }
         } else {
             // Standardize URL format
-            let fullUrl = url;
             if (url.startsWith('www.')) {
-                fullUrl = 'https://' + url;
+                processedUrl = 'https://' + url;
             } else if (!url.includes('://')) {
-                fullUrl = 'https://' + url;
-            }
-            
-            // Intentar determinar si la URL es válida
-            try {
-                new URL(fullUrl);
-                createSimulatedContent(fullUrl, iframe, loadingContainer);
-            } catch (error) {
-                // URL inválida, mostrar como error
-                createSimulatedContent(`https://error.com?error=notfound&url=${encodeURIComponent(fullUrl)}`, iframe, loadingContainer);
+                processedUrl = 'https://' + url;
+            } else {
+                processedUrl = url;
             }
         }
         
-        // Add iframe to the browser frame
-        browserFrame.appendChild(iframe);
+        // Try to validate URL format
+        try {
+            new URL(processedUrl);
+            
+            // Set iframe source to the actual website
+            iframe.src = processedUrl;
+            browserFrame.appendChild(iframe);
+            
+            // Add a message about possible CORS issues
+            const corsWarning = document.createElement('div');
+            corsWarning.style.position = 'absolute';
+            corsWarning.style.bottom = '10px';
+            corsWarning.style.left = '10px';
+            corsWarning.style.right = '10px';
+            corsWarning.style.backgroundColor = 'rgba(0,0,0,0.7)';
+            corsWarning.style.color = 'white';
+            corsWarning.style.padding = '10px';
+            corsWarning.style.borderRadius = '5px';
+            corsWarning.style.fontSize = '12px';
+            corsWarning.style.textAlign = 'center';
+            corsWarning.style.zIndex = '1000';
+            corsWarning.textContent = 'Si la página no carga, es posible que tenga restricciones de seguridad (CORS) que impidan mostrarla en un iframe.';
+            corsWarning.style.opacity = '0';
+            corsWarning.style.transition = 'opacity 0.5s';
+            
+            // Show the warning after a delay
+            setTimeout(() => {
+                if (corsWarning.parentNode) { // Check if still in DOM
+                    corsWarning.style.opacity = '1';
+                    
+                    // Hide after 5 seconds
+                    setTimeout(() => {
+                        if (corsWarning.parentNode) {
+                            corsWarning.style.opacity = '0';
+                            // Remove after fade out
+                            setTimeout(() => {
+                                if (corsWarning.parentNode) {
+                                    corsWarning.parentNode.removeChild(corsWarning);
+                                }
+                            }, 500);
+                        }
+                    }, 5000);
+                }
+            }, 3000);
+            
+            browserFrame.appendChild(corsWarning);
+            
+        } catch (error) {
+            // URL inválida
+            showErrorMessage(`La URL ${url} no es válida. Por favor, verifique la dirección e intente de nuevo.`);
+            if (typeof SoundEffects !== 'undefined' && SoundEffects.playError) {
+                SoundEffects.playError();
+            }
+        }
     } catch (error) {
         console.error('Navigation error:', error);
         showErrorMessage(`Error al cargar la página: ${error.message}`);
