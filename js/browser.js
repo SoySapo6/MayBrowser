@@ -4,20 +4,26 @@
 let browserHistory = [];
 let currentHistoryIndex = -1;
 let browserFrame;
+let browserContent;
 let urlInput;
 let backButton;
 let forwardButton;
 let homeButton;
 let refreshButton;
 let menuPanel;
-let browserContainer;
+
+// Debugging helper
+function debugLog(message) {
+    console.log(`[MayBrowser] ${message}`);
+}
 
 // Function to initialize browser functionality
 function initializeBrowser() {
-    console.log('Initializing MayBrowser...');
+    debugLog('Initializing MayBrowser...');
     
     // Get browser elements
-    browserFrame = document.getElementById('browserContent');
+    browserFrame = document.getElementById('browserFrame');
+    browserContent = document.getElementById('browserContent');
     urlInput = document.getElementById('urlInput');
     backButton = document.getElementById('backButton');
     forwardButton = document.getElementById('forwardButton');
@@ -25,7 +31,11 @@ function initializeBrowser() {
     refreshButton = document.getElementById('refreshButton');
     menuButton = document.getElementById('menuButton');
     menuPanel = document.getElementById('menuPanel');
-    browserContainer = document.getElementById('browserContainer');
+    
+    if (!browserContent) {
+        debugLog('Error: browserContent element not found!');
+        return;
+    }
     
     // Add event listeners
     urlInput.addEventListener('keypress', (e) => {
@@ -39,19 +49,40 @@ function initializeBrowser() {
     document.getElementById('urlForm').addEventListener('submit', (e) => {
         e.preventDefault();
         navigateToUrl(urlInput.value);
-    });
-    
-    document.getElementById('goButton').addEventListener('click', (e) => {
-        e.preventDefault();
-        navigateToUrl(urlInput.value);
+        return false;
     });
     
     // Browser control buttons
-    backButton.addEventListener('click', goBack);
-    forwardButton.addEventListener('click', goForward);
-    homeButton.addEventListener('click', goHome);
-    refreshButton.addEventListener('click', refreshPage);
-    menuButton.addEventListener('click', toggleMenu);
+    backButton.addEventListener('click', () => {
+        debugLog('Back button clicked');
+        goBack();
+    });
+    
+    forwardButton.addEventListener('click', () => {
+        debugLog('Forward button clicked');
+        goForward();
+    });
+    
+    homeButton.addEventListener('click', () => {
+        debugLog('Home button clicked');
+        goHome();
+    });
+    
+    refreshButton.addEventListener('click', () => {
+        debugLog('Refresh button clicked');
+        refreshPage();
+    });
+    
+    // Menu toggle
+    menuButton.addEventListener('click', () => {
+        debugLog('Menu button clicked');
+        toggleMenu();
+    });
+    
+    // Close menu button
+    document.getElementById('closeMenuPanel').addEventListener('click', () => {
+        menuPanel.style.display = 'none';
+    });
     
     // Menu items
     document.getElementById('bookmarks').addEventListener('click', showBookmarks);
@@ -378,6 +409,7 @@ function getSimulatedContent(url, hostname) {
 
 // Function to handle showing browser content
 function showBrowserContent(url) {
+    debugLog(`Showing browser content for: ${url}`);
     // Clear current content
     browserFrame.innerHTML = '';
     
@@ -1022,4 +1054,5 @@ function createStars() {
         <use href="assets/moon.svg#moon"></use>
     </svg>`;
     starContainer.appendChild(moon);
-}
+}// Expose navigateToUrl as a global function to make it accessible from HTML
+window.navigateToUrl = navigateToUrl;

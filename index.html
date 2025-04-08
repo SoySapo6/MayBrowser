@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Pre-loading JS to ensure functions are available -->
+    <script src="js/sounds.js"></script>
+    <script src="js/ai.js"></script>
+    <script src="js/browser.js"></script>
 </head>
 <body>
     <div class="background">
@@ -39,34 +44,10 @@
     </header>
 
     <div class="browser-content">
-        <!-- Usamos un enfoque basado en busqueda en lugar de iframe directo -->
+        <!-- Browser frame content -->
         <div id="browserFrame" class="browser-frame">
-            <div class="browser-default-content">
-                <div class="search-container">
-                    <h2>MayBrowser</h2>
-                    <div class="search-box">
-                        <input type="text" id="searchInput" placeholder="Buscar en Google o escribir URL">
-                        <button id="searchButton"><i class="fas fa-search"></i></button>
-                    </div>
-                    <div class="quick-links">
-                        <a href="javascript:void(0);" onclick="navigateToUrl('https://www.youtube.com')" class="quick-link">
-                            <i class="fab fa-youtube"></i>
-                            <span>YouTube</span>
-                        </a>
-                        <a href="javascript:void(0);" onclick="navigateToUrl('https://www.facebook.com')" class="quick-link">
-                            <i class="fab fa-facebook"></i>
-                            <span>Facebook</span>
-                        </a>
-                        <a href="javascript:void(0);" onclick="navigateToUrl('https://www.twitter.com')" class="quick-link">
-                            <i class="fab fa-twitter"></i>
-                            <span>Twitter</span>
-                        </a>
-                        <a href="javascript:void(0);" onclick="navigateToUrl('https://www.instagram.com')" class="quick-link">
-                            <i class="fab fa-instagram"></i>
-                            <span>Instagram</span>
-                        </a>
-                    </div>
-                </div>
+            <div id="browserContent">
+                <!-- Content will be loaded here -->
             </div>
         </div>
     </div>
@@ -99,31 +80,52 @@
             <button id="closeMenuPanel"><i class="fas fa-times"></i></button>
         </div>
         <div class="menu-content">
-            <button class="menu-item" id="toggleSoundButton">
-                <i class="fas fa-volume-up"></i>
-                <span>Toggle Sound</span>
-            </button>
-            <button class="menu-item" id="bookmarksButton">
+            <button class="menu-item" id="bookmarks">
                 <i class="fas fa-bookmark"></i>
                 <span>Bookmarks</span>
             </button>
-            <button class="menu-item" id="historyButton">
+            <button class="menu-item" id="history">
                 <i class="fas fa-history"></i>
                 <span>History</span>
             </button>
-            <button class="menu-item" id="settingsButton">
+            <button class="menu-item" id="settings">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
             </button>
-            <button class="menu-item" id="aboutButton">
+            <button class="menu-item" id="about">
                 <i class="fas fa-info-circle"></i>
                 <span>About MayBrowser</span>
             </button>
         </div>
     </div>
 
-    <script src="js/sounds.js"></script>
-    <script src="js/ai.js"></script>
-    <script src="js/browser.js"></script>
+    <!-- Hidden star background for animation -->
+    <div id="starBackground" class="star-background"></div>
+
+    <script>
+        // Esperar a que la página cargue completamente
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM cargado completamente');
+            
+            // Inicializar navegador
+            if (typeof initializeBrowser === 'function') {
+                initializeBrowser();
+                
+                // Links rápidos personalizados para garantizar que funcionen
+                document.querySelectorAll('.quick-link').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const url = this.getAttribute('data-url');
+                        if (url) {
+                            console.log('Navegando a:', url);
+                            navigateToUrl(url);
+                        }
+                    });
+                });
+            } else {
+                console.error('ERROR: initializeBrowser no está definida');
+            }
+        });
+    </script>
 </body>
 </html>
