@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiMessages = document.getElementById('aiMessages');
     
     // API configuration
-    const GEMINI_API_KEY = 'AIzaSyCYWNbM2ZgdDSp9NlFxTgp0Wtwaaw7dyRc'; // Clave API
+    const GEMINI_API_KEY = 'AIzaSyAZ8fZrFbrFNFRqL-uUni5pXkAo0pEUUV4'; // Clave API
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
     
     // Toggle AI Panel
