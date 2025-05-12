@@ -247,17 +247,17 @@ function showBrowserContent(url) {
                 let videoId = '';
                 if (formattedUrl.includes('watch?v=')) {
                     videoId = formattedUrl.split('watch?v=')[1].split('&')[0];
-                    processedUrl = `https://www.bitchute.com/search?query=${videoId}/`;
+                    processedUrl = `https://may-tube.vercel.app/`;
                 } else if (formattedUrl.includes('youtu.be/')) {
                     videoId = formattedUrl.split('youtu.be/')[1].split('?')[0];
-                    processedUrl = `https://www.bitchute.com/search?query=${videoId}/`;
+                    processedUrl = `https://may-tube.vercel.app/`;
                 } else {
                     // Just go to the homepage
-                    processedUrl = 'https://www.bitchute.com/';
+                    processedUrl = 'https://may-tube.vercel.app/';
                 }
                 
                 showNotification = true;
-                notificationMessage = 'Utilizando bitchute como alternativa a YouTube, ya que YouTube no permite ser mostrado en iFrames.';
+                notificationMessage = 'Utilizando MayTube como alternativa a YouTube, ya que YouTube no permite ser mostrado en iFrames.';
             } else if (formattedUrl.includes('google.com')) {
                 // Redirect Google searches to DuckDuckGo
                 if (formattedUrl.includes('search?q=')) {
